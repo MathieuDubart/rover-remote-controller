@@ -1,21 +1,40 @@
 //
 //  ContentView.swift
-//  Rover-Remote-Controller
+//  Accelero
 //
-//  Created by Mathieu DUBART on 04/11/2024.
+//  Created by digital on 24/10/2024.
 //
 
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject var accelerometerManager = AccelerometerManager()
+    @ObservedObject var wsClient = WebSocketClient.shared
+    @State var connectedToServer: Bool = false
+    @AppStorage("movementsRoute") private var movementsRoute: String?
+    
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        NavigationStack {
+            VStack {
+                Button("Connect to server") {
+                    guard let movementsRoute = self.movementsRoute else {return}
+                    connectedToServer = wsClient.connectTo(route: movementsRoute)
+                }
+            }
+            .padding()
+            .toolbar {
+                NavigationLink("Configuration"){
+                    ConfigView()
+                }
+            }
         }
-        .padding()
+        .sheet(isPresented: $connectedToServer){
+            SheetView()
+                .environmentObject(accelerometerManager)
+                .onDisappear {
+                    wsClient.disconnectFromAllRoutes()
+                }
+        }
     }
 }
 
